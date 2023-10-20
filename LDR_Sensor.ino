@@ -1,27 +1,52 @@
-#define SENSOR_PIN 2
-#define RELAY_PIN 3
+#include <FastLED.h>
 
-void setup() 
+#define NUM_LEDS 29
+
+const byte DATA_PIN = 2;
+const byte ldrPin = A2;
+
+const int lightThreshold = 600;
+const int hysteresis = 20;
+
+CRGB leds[NUM_LEDS];
+CRGB color = {255, 255, 0};
+
+void setup()
 {
-  pinMode(RELAY_PIN, OUTPUT);
-  pinMode(SENSOR_PIN, INPUT);  
-  //Serial.begin(9600);
+   Serial.begin(115200);
+   pinMode(ldrPin, INPUT_PULLUP);
+   LEDS.addLeds<WS2812, DATA_PIN, GRB>(leds, NUM_LEDS);
+   LEDS.setBrightness(120);
+   setColor(CRGB::Black);  // turn all LEDs off
+   FastLED.show();
 }
 
-void loop() 
+void loop()
 {
-  //If there is no light then the sensor value will be 1 else the value will be 0
-  int sensorValue = digitalRead(SENSOR_PIN);
-  //Serial.println(sensorValue);
-  //Its dark
-  if (sensorValue == HIGH)
-  {
-    digitalWrite(RELAY_PIN, LOW);  //Relay is low level triggered relay so we need to write LOW to switch on the light
-  }
-  else
-  {
-    digitalWrite(RELAY_PIN, HIGH);    
-  }
-  //You can add delay for getting good light settled reading depending upon need
-  delay(1000);
-} 
+   static unsigned long timer = 0;
+   unsigned long interval = 200;
+   if (millis() - timer >= interval)
+   {
+      timer = millis();
+      int lightValue = analogRead(ldrPin);
+      Serial.println(lightValue);
+      if (lightValue > lightThreshold + hysteresis)
+      {
+         setColor(CRGB::White);
+         FastLED.show();
+      }
+      else if (lightValue < lightThreshold - hysteresis)
+      {
+         setColor(CRGB::Black);
+         FastLED.show();
+      }
+   }
+}
+
+void setColor(CRGB color)
+{
+   for (byte n = 0; n < NUM_LEDS; n++)
+   {
+      leds[n] = color;
+   }
+}
